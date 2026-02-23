@@ -25,8 +25,12 @@ data class ReviewCreateResponse(val message: String, val review: Review? = null)
 object ReviewRepository {
 
     // ── Reseñas de una habitación ─────────────────────────────────────────────
+    // ── Reseñas de una habitación y del usuario ───────────────────────────────
     private val _reviews = MutableStateFlow<List<Review>>(emptyList())
     val reviews: StateFlow<List<Review>> = _reviews
+
+    private val _userReviews = MutableStateFlow<List<Review>>(emptyList())
+    val userReviews: StateFlow<List<Review>> = _userReviews
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -47,6 +51,27 @@ object ReviewRepository {
                 Log.d("REVIEW_REPO", "Cargadas ${_reviews.value.size} reseñas para $roomId")
             } else {
                 _error.value = "Error al cargar reseñas: ${response.code()}"
+                Log.e("REVIEW_REPO", "Error ${response.code()}")
+            }
+        } catch (e: Exception) {
+            _error.value = "Error de conexión: ${e.message}"
+            Log.e("REVIEW_REPO", "Exception: ${e.message}")
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    /** Obtiene todas las reseñas del usuario logueado */
+    suspend fun fetchUserReviews() {
+        _isLoading.value = true
+        _error.value = null
+        try {
+            val response = RetrofitClient.reviewService.getUserReviews()
+            if (response.isSuccessful) {
+                _userReviews.update { response.body() ?: emptyList() }
+                Log.d("REVIEW_REPO", "Cargadas ${_userReviews.value.size} reseñas del usuario")
+            } else {
+                _error.value = "Error al cargar reseñas del usuario: ${response.code()}"
                 Log.e("REVIEW_REPO", "Error ${response.code()}")
             }
         } catch (e: Exception) {
@@ -83,6 +108,7 @@ object ReviewRepository {
             val response = RetrofitClient.reviewService.deleteReview(body)
             if (response.isSuccessful) {
                 fetchReviewsByRoom(roomId)
+                fetchUserReviews()
                 Result.success("Reseña eliminada")
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Error ${response.code()}"
@@ -98,5 +124,6 @@ object ReviewRepository {
     }
     fun clearReviews() {
         _reviews.update { emptyList() }
+        _userReviews.update { emptyList() }
     }
 }

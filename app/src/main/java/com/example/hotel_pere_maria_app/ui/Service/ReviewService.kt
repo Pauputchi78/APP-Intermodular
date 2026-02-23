@@ -8,9 +8,7 @@ import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-/**
- * Servicio de Retrofit para gestionar las peticiones HTTP relacionadas con reseñas
- */
+/** Servicio de Retrofit para gestionar las peticiones HTTP relacionadas con reseñas */
 interface ReviewService {
 
     /**
@@ -20,6 +18,12 @@ interface ReviewService {
      */
     @GET("review/room/{roomId}")
     suspend fun getReviewsByRoom(@Path("roomId") roomId: String): Response<List<Review>>
+
+    /**
+     * Obtiene todas las reseñas del usuario logueado
+     * @return Response con lista de reseñas del usuario
+     */
+    @GET("review/user") suspend fun getUserReviews(): Response<List<Review>>
 
     /**
      * Crea una nueva reseña
